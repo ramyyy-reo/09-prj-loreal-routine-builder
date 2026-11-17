@@ -30,6 +30,10 @@ function displayProducts(products) {
       <div class="product-info">
         <h3>${product.name}</h3>
         <p>${product.brand}</p>
+        <div id="product-desc">
+          <button type="button">Add to cart</button>
+          <p>${product.description}</p>
+        </div>
       </div>
     </div>
   `
@@ -37,35 +41,37 @@ function displayProducts(products) {
     .join("");
 }
 
-/* Toggle the selected style when a product card is clicked, add it to list */
-/* Also removes it from list when selected again */
+/* Add or remove a product only when its button is clicked */
 productsContainer.addEventListener("click", (e) => {
-  const productCard = e.target.closest(".product-card");
-  if (productCard) {
-    if (!productCard.classList.contains("selected")) {
-      productCard.classList.toggle("selected");
-      selectedProductsList.appendChild(productCard.cloneNode(true));
-    } else {
-      productCard.classList.remove("selected");
-      for (const card of selectedProductsList.children) {
-        if (card.dataset.productName === productCard.dataset.productName) {
-          card.remove();
-          break;
-        }
+  const productButton = e.target.closest("#product-desc button");
+  const productCard = productButton.closest(".product-card");
+  
+  if (!productCard.classList.contains("selected")) {
+    productCard.classList.add("selected");
+    productButton.textContent = "Remove from cart";
+    selectedProductsList.appendChild(productCard.cloneNode(true));
+  } else {
+    productCard.classList.remove("selected");
+    productButton.textContent = "Add to cart";
+    for (const card of selectedProductsList.children) {
+      if (card.dataset.productName === productCard.dataset.productName) {
+        card.remove();
+        break;
       }
     }
   }
 });
 
 selectedProductsList.addEventListener("click", (e) => {
-  const selectedCard = e.target.closest(".product-card.selected");
-  if (selectedCard) {
-    selectedCard.remove();
-    for (const card of productsContainer.children) {
-      if (card.dataset.productName === selectedCard.dataset.productName) {
-        card.classList.remove("selected");
-        break;
-      }
+  const removeButton = e.target.closest("#product-desc button");
+  const selectedCard = removeButton.closest(".product-card.selected");
+ 
+  selectedCard.remove();
+  for (const card of productsContainer.children) {
+    if (card.dataset.productName === selectedCard.dataset.productName) {
+      card.classList.remove("selected");
+      card.querySelector("#product-desc button").textContent = "Add to cart";
+      break;
     }
   }
 });
