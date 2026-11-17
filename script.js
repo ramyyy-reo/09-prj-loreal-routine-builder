@@ -3,6 +3,8 @@ const categoryFilter = document.getElementById("categoryFilter");
 const productsContainer = document.getElementById("productsContainer");
 const chatForm = document.getElementById("chatForm");
 const chatWindow = document.getElementById("chatWindow");
+const selectedProducts = document.getElementById("selected-products");
+const selectedProductsList = document.getElementById("selectedProductsList");
 
 /* Show initial placeholder until user selects a category */
 productsContainer.innerHTML = `
@@ -23,7 +25,7 @@ function displayProducts(products) {
   productsContainer.innerHTML = products
     .map(
       (product) => `
-    <div class="product-card">
+    <div class="product-card" data-product-name="${product.name}">
       <img src="${product.image}" alt="${product.name}">
       <div class="product-info">
         <h3>${product.name}</h3>
@@ -34,6 +36,39 @@ function displayProducts(products) {
     )
     .join("");
 }
+
+/* Toggle the selected style when a product card is clicked, add it to list */
+/* Also removes it from list when selected again */
+productsContainer.addEventListener("click", (e) => {
+  const productCard = e.target.closest(".product-card");
+  if (productCard) {
+    if (!productCard.classList.contains("selected")) {
+      productCard.classList.toggle("selected");
+      selectedProductsList.appendChild(productCard.cloneNode(true));
+    } else {
+      productCard.classList.remove("selected");
+      for (const card of selectedProductsList.children) {
+        if (card.dataset.productName === productCard.dataset.productName) {
+          card.remove();
+          break;
+        }
+      }
+    }
+  }
+});
+
+selectedProductsList.addEventListener("click", (e) => {
+  const selectedCard = e.target.closest(".product-card.selected");
+  if (selectedCard) {
+    selectedCard.remove();
+    for (const card of productsContainer.children) {
+      if (card.dataset.productName === selectedCard.dataset.productName) {
+        card.classList.remove("selected");
+        break;
+      }
+    }
+  }
+});
 
 /* Filter and display products when category changes */
 categoryFilter.addEventListener("change", async (e) => {
@@ -48,6 +83,8 @@ categoryFilter.addEventListener("change", async (e) => {
 
   displayProducts(filteredProducts);
 });
+
+
 
 /* Chat form submission handler - placeholder for OpenAI integration */
 chatForm.addEventListener("submit", (e) => {
