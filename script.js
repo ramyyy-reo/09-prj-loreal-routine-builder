@@ -5,6 +5,7 @@ const chatForm = document.getElementById("chatForm");
 const chatWindow = document.getElementById("chatWindow");
 const selectedProducts = document.getElementById("selected-products");
 const selectedProductsList = document.getElementById("selectedProductsList");
+const clearSelectedProducts = document.getElementById("clearSelectedProducts");
 const generateRoutine = document.getElementById("generateRoutine");
 const sendBtn = document.getElementById("sendBtn");
 const userInput = document.getElementById("userInput");
@@ -25,25 +26,40 @@ async function loadProducts() {
   return data.products;
 }
 
+const productsPromise = loadProducts();
+const selectedProductsStorageKey = "lorealRoutineSelectedProducts";
+
 /* Create HTML for displaying product cards */
-function displayProducts(products) {
-  productsContainer.innerHTML = products
+function displayProducts(products, container = productsContainer) {
+  container.innerHTML = products
     .map(
-      (product) => `
-    <div class="product-card" data-product-name="${product.name}">
+      (product) => {
+        const isSelected = selectedListToSend.some(
+          (selected) => selected.name === product.name
+        );
+        return `
+    <div class="product-card ${isSelected ? "selected" : ""}" data-product-name="${product.name}">
       <img src="${product.image}" alt="${product.name}">
       <div class="product-info">
         <h3>${product.name}</h3>
         <p>${product.brand}</p>
         <div id="product-desc">
           <p>${product.description}</p>
-          <button type="button">Add to cart</button>
+          <button type="button">${isSelected ? "Remove from cart" : "Add to cart"}</button>
         </div>
       </div>
     </div>
-  `
+  `;
+      }
     )
     .join("");
+}
+
+function saveSelectedProducts() {
+  localStorage.setItem(
+    selectedProductsStorageKey,
+    JSON.stringify(selectedListToSend.map((product) => product.name))
+  );
 }
 
 function addChatMessage(message, role) {
@@ -67,6 +83,7 @@ let conversationHistory = [{
 
 let allProducts = [];
 let selectedListToSend = [];
+if (selectedListToSend.length == 0) generateRoutine.disabled = true;
 
 /* Add or remove a product only when its button is clicked */
 productsContainer.addEventListener("click", (e) => {
@@ -81,6 +98,9 @@ productsContainer.addEventListener("click", (e) => {
       (item) => item.name === productCard.dataset.productName
     );
     if (product) {selectedListToSend.push(product);}
+    clearSelectedProducts.disabled = false;
+    generateRoutine.disabled = false;
+    saveSelectedProducts();
   } else {
     productCard.classList.remove("selected");
     productButton.textContent = "Add to cart";
@@ -93,6 +113,11 @@ productsContainer.addEventListener("click", (e) => {
     selectedListToSend = selectedListToSend.filter(
       (product) => product.name !== productCard.dataset.productName
     );
+    if (selectedListToSend.length == 0) {
+      clearSelectedProducts.disabled = true;
+      generateRoutine.disabled = true;
+    }
+    saveSelectedProducts();
   }
 });
 
@@ -111,11 +136,45 @@ selectedProductsList.addEventListener("click", (e) => {
   selectedListToSend = selectedListToSend.filter(
       (selected) => selected.name !== selectedCard.dataset.productName
     );
+  if (selectedListToSend.length == 0) {
+    clearSelectedProducts.disabled = true;
+    generateRoutine.disabled = true;
+  }
+  saveSelectedProducts();
 });
+
+clearSelectedProducts.addEventListener("click", () => {
+  selectedListToSend = [];
+  selectedProductsList.innerHTML = "";
+  clearSelectedProducts.disabled = true;
+  generateRoutine.disabled = true;
+
+  for (const card of productsContainer.querySelectorAll(".product-card.selected")) {
+    card.classList.remove("selected");
+    card.querySelector("#product-desc button").textContent = "Add to cart";
+  }
+
+  saveSelectedProducts();
+});
+
+async function restoreSelectedProducts() {
+  allProducts = await productsPromise;
+  const savedProductNames = JSON.parse(
+    localStorage.getItem(selectedProductsStorageKey) || "[]"
+  );
+  selectedListToSend = allProducts.filter((product) =>
+    savedProductNames.includes(product.name)
+  );
+  generateRoutine.disabled = selectedListToSend.length == 0;
+  if (selectedListToSend.length == 0) clearSelectedProducts.disabled = true;
+  displayProducts(selectedListToSend, selectedProductsList);
+}
+
+restoreSelectedProducts();
 
 /* Filter and display products when category changes */
 categoryFilter.addEventListener("change", async (e) => {
-  allProducts = await loadProducts();
+  allProducts = await productsPromise;
   const selectedCategory = e.target.value;
   /* filter() creates a new array containing only products 
      where the category matches what the user selected */
@@ -128,6 +187,7 @@ categoryFilter.addEventListener("change", async (e) => {
 
 generateRoutine.addEventListener("click", async function() {
   generateRoutine.disabled = true;
+  sendBtn.disabled = true;
   const message = `Build a routine using these products: ${JSON.stringify(
     selectedListToSend.map(({ name, brand, category, description }) => ({
       name, brand, category, description,}))

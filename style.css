@@ -305,9 +305,31 @@ body {
   border-radius: 8px;
 }
 
+.selected-products-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
 .selected-products h2 {
   font-size: 20px;
-  margin-bottom: 20px;
+  margin-bottom: 0;
+}
+
+.clear-btn {
+  padding: 8px 12px;
+  color: white;
+  background: black;
+  font: inherit;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.3s;
+}
+
+.clear-btn:hover, .clear-btn:disabled {
+  background: #666;
 }
 
 #selectedProductsList {
